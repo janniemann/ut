@@ -1,0 +1,9 @@
+install: true
+language: c
+script: make
+compiler:
+  - clang
+  - gcc
+os:
+  - osx
+  - linux

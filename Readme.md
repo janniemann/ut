@@ -1,17 +1,19 @@
 # libut - simple library for unit testing ANSI C
 
-## features & goals
+[![Build Status](https://travis-ci.org/janniemann/ut.svg?branch=master)](https://travis-ci.org/janniemann/ut)
+
+## Features & Goals
 
 - simple
     - one header, one source file
     - less than 200 lines
+    - no test fixtures
 - easy to use
     - only three basic macros
     - entry point is void test(void);
     - uses names starting with ut_ or UT_, names starting with ut__ or UT__ are for internal use.
 - fast
     - no recompilation of already compiled code
-- no test fixtures
 
 ## Installation
 
