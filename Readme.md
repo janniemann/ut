@@ -4,6 +4,9 @@
 
 ## Features & Goals
 
+- tricky stuff, not only simple assertions
+    - test for signals
+    - test for exit()
 - simple
     - one header, one source file
     - less than 200 lines
