@@ -25,19 +25,18 @@
     and as root:
     `# make PREFIX=/usr/local install`
 
-
 ## Usage
 
 see GNUmakefile for target unit_test that demonstrates basic functionality.
 
 simple Assertions:
-- UT_ASSERT(expression)
+- `UT_ASSERT(expression)`
 
 assert exit status from a function call:
-- UT_ASSERT_EXIT(status, call)
+- `UT_ASSERT_EXIT(status, call)`
 
 assert thrown signal:
-- UT_ASSERT_SIGNAL(signal, call)
+- `UT_ASSERT_SIGNAL(signal, call)`
 
 Note that calls to exit() or _Exit() in the unit to be tested will not perform any cleanup at all.
 This may or may not break further tests. I don't know. Try it and let me know how it works for you.
