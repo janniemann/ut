@@ -19,46 +19,49 @@
 
 extern int ut__tests_run;
 extern int ut__tests_failed;
-extern volatile sig_atomic_t ut__signal;
+extern volatile sig_atomic_t ut__signal_received;
 extern jmp_buf ut__jmp_buf_env;
+extern int ut__exit_status;
 
-#define UT_ASSERT(e) ut__tests_run++; ((e) ? (void)0 : ut__assert(__FILE__, __LINE__, __func__, #e))
+#define UT_ASSERT(expression) ut__tests_run++; ((expression) ? (void)0 : ut__assert(__FILE__, __LINE__, __func__, #expression))
 
 #define UT_ASSERT_EXIT(x, e) do {					\
-    int status = setjmp(ut__jmp_buf_env);				\
-    switch (status) {							\
-    case 0:								\
+    if (!setjmp(ut__jmp_buf_env)) {					\
       ut__tests_run++;							\
       (e);								\
-      break;								\
-    case (0x100 + ((x) & 0xff)) + 1:					\
-      break;								\
-    default:								\
-      status = ((status - 1) - 0x100) & 0xff;				\
-      fprintf(stderr, "%s:%d:%s: unit test failure: expected exit status %d, got status %d\n", __FILE__, __LINE__, __func__, x, status); \
+      fprintf(stderr, "UT: %s:%d:%s: expected exit status %d, but exit or _Exit was not called\n", __FILE__, __LINE__, __func__, x); \
       ut__tests_failed++;						\
+    } else {								\
+      if (ut__exit_status != x) {					\
+	fprintf(stderr, "UT: %s:%d:%s: expected exit status %d, got exit status %d instead\n", __FILE__, __LINE__, __func__, x, ut__exit_status); \
+	ut__tests_failed++;						\
+      }									\
     }									\
   } while (0)
 
 
-#define UT_ASSERT_SIGNAL(s, e) do {		\
-    ut__tests_run++;				\
-    signal(s, ut__sighdlr);			\
-    (e);					\
-    if (ut__signal != s) {			\
-      ut__tests_failed++;			\
-    }						\
-    signal(s, SIG_DFL);				\
+#define UT_ASSERT_SIGNAL(s, e) do {					\
+    ut__tests_run++;							\
+    ut__signal_received = -1;						\
+    signal(s, ut__signal_handler);					\
+    (e);								\
+    if (ut__signal_received != s) {					\
+      if (ut__signal_received == -1) {					\
+	fprintf(stderr, "UT: %s:%d:%s: expected signal %d, but no signal was raised\n", __FILE__, __LINE__, __func__, s); \
+      } else {								\
+	fprintf(stderr, "UT: %s:%d:%s: expected signal %d, got signal %d instead\n", __FILE__, __LINE__, __func__, s, ut__signal_received); \
+      }									\
+      ut__tests_failed++;						\
+    }									\
+    signal(s, SIG_DFL);							\
   } while (0)
 
 
 // forward declaration: entry point for tests:
 extern void test(void);
 
-void ut__sighdlr(int sig);
-void ut__assert(const char * restrict file, int line, const char * restrict func, const char * restrict failedexpr);
-
-void exit(int status);
-void _Exit(int status);
+// prototypes
+void ut__signal_handler(int signal);
+void ut__assert(const char * restrict file, int line, const char * restrict func, const char * restrict failed_expression);
 
 #endif

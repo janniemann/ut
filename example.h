@@ -4,7 +4,7 @@
 // returns a + 1;
 int somefunction_1(int a);
 
-// returns 3/y
+// raises SIGINT
 void somefunction_2(void);
 
 // calls exit with EXIT_FAILURE

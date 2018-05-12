@@ -21,44 +21,54 @@
 
 #include "ut.h"
 
-
-// --- simple assertions
-
-// for recording tests and their failures
+// --- recording tests and failures
 int ut__tests_run = 0;
 int ut__tests_failed = 0;
 
-// most basic assertion, based on <assert.h>
+
+// --- simple assertion
+
+// the expression is tested with UT_ASSERT(expression), ut__assert prints the failed expression and records failure
 void
-ut__assert(const char * restrict file, int line, const char * restrict func, const char * restrict failedexpr)
+ut__assert(const char * restrict file, int line, const char * restrict func, const char * restrict failed_expression)
 {
-  (void)fprintf(stderr, "%s:%d:%s: test failure: %s\n", file, line, func, failedexpr);
+  (void)fprintf(stderr, "UT: %s:%d:%s: failed expression: %s\n", file, line, func, failed_expression);
   ut__tests_failed++;
 }
 
 
 
 // --- signal handling
-volatile sig_atomic_t ut__signal;
+
+// ut__sighdlr records the signal in ut_signal_received
+volatile sig_atomic_t ut__signal_received;
+
 void
-ut__sighdlr(int sig)
+ut__signal_handler(int signal)
 {
-  ut__signal = sig;
+  ut__signal_received = signal;
 }
 
-// --- exit status handling
-jmp_buf ut__jmp_buf_env;
 
+// --- exit status handling
+
+// exit and _Exit now jump back to a location recorded by UT_ASSERT_EXIT
+jmp_buf ut__jmp_buf_env;
+int ut__exit_status;
+
+// note that only lowest 8 bit will be preserved
 void
 exit(int status)
 {
-  longjmp(ut__jmp_buf_env, (status & 0xff) + 0x100 + 1);
+  ut__exit_status = status;
+  longjmp(ut__jmp_buf_env, 1);
 }
 
 void
 _Exit(int status)
 {
-  longjmp(ut__jmp_buf_env, (status & 0xff) + 0x100 + 1);
+  ut__exit_status = status;
+  longjmp(ut__jmp_buf_env, 1);
 }
 
 
@@ -69,12 +79,12 @@ _Exit(int status)
 
 // we provide our own "main" entry point to properly report test failures:
 // the unit test is also unsuccessful if no tests where run
+// we do call test() from within main. test() must be provided by the unit test.
 int
 main(int argc, char **argv)
 {
-  fprintf(stderr, "UT: ut, version 1.0.0\n");
+  fprintf(stderr, "UT: ut, version 1.0.1\n");
 
-  // see forward declaration in ut.h
   test();
 
   fprintf(stderr, "UT: %d out of %d tested assertions failed.\n", ut__tests_failed, ut__tests_run);
@@ -86,5 +96,3 @@ main(int argc, char **argv)
       return EXIT_SUCCESS;
   }
 }
-
-

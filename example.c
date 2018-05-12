@@ -12,7 +12,7 @@ somefunction_1(int a)
   return a+1;
 }
 
-// should raise signal, if y == 0
+// raises SIGINT
 void
 somefunction_2(void)
 {

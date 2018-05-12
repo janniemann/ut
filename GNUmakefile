@@ -24,7 +24,7 @@ libut.pc: libut.pc.in
 
 unit_test: example.o example_test.o
 	${CC} $^ -I. -L. -lut -o example_test
-	@./example_test
+	@./example_test 2>&1 1>/dev/null |grep ^UT
 
 # may be called by root: no dependencies, so install target can never invoke cc or ar.
 install:

@@ -18,7 +18,9 @@ test(void)
 
   // UT_ASSERT_SIGNAL(SIGABRT, somefunction_2()); // would fail completely
   UT_ASSERT_SIGNAL(SIGINT, somefunction_2()); // succeeds
+  UT_ASSERT_SIGNAL(SIGINT, (void)somefunction_1(1)); // fails, expected signal not raised
 
   UT_ASSERT_EXIT(0, somefunction_3()); // fails
   UT_ASSERT_EXIT(1, somefunction_3()); // succeeds
+  UT_ASSERT_EXIT(1, (void)somefunction_1(1)); // should fail
 }
