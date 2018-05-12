@@ -1,0 +1,12 @@
+# editor backup files
+\#*\#
+*~
+
+# object files
+*.o
+
+# static library files
+*.a
+
+# pkg-config files
+*.pc
