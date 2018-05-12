@@ -10,3 +10,9 @@
 
 # pkg-config files
 *.pc
+
+# specific binaries without extension
+example_test
+
+# core dumps
+# no core dumps...
