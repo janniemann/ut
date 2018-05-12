@@ -19,9 +19,10 @@
     $ make install
 
 - installation another location (use same PREFIX on both invocations of make):
-    $ make PREFIX=/usr/local
+    `$ make PREFIX=/usr/local`
     and as root:
-    # make PREFIX=/usr/local install
+    `# make PREFIX=/usr/local install`
+
 
 ## Usage
 
