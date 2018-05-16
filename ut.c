@@ -21,14 +21,14 @@
 
 #include "ut.h"
 
-// --- recording tests and failures
+/* --- recording tests and failures */
 int ut__tests_run = 0;
 int ut__tests_failed = 0;
 
 
-// --- simple assertion
+/* --- simple assertion */
 
-// the expression is tested with UT_ASSERT(expression), ut__assert prints the failed expression and records failure
+/* see UT_ASSERT */
 void
 ut__assert(const char * restrict file, int line, const char * restrict func, const char * restrict failed_expression)
 {
@@ -36,12 +36,11 @@ ut__assert(const char * restrict file, int line, const char * restrict func, con
   ut__tests_failed++;
 }
 
+/* --- signal handling */
 
-
-// --- signal handling
-
-// ut__sighdlr records the signal in ut_signal_received
+/* ut__signal_handler() records the received signal in ut_signal_received */
 volatile sig_atomic_t ut__signal_received;
+void ut__signal_handler(int signal);
 
 void
 ut__signal_handler(int signal)
@@ -49,14 +48,40 @@ ut__signal_handler(int signal)
   ut__signal_received = signal;
 }
 
+/* register a signal test */
+void
+ut__register_signal_test(int expected_signal)
+{
+  ut__tests_run++;
+  ut__signal_received = -1;
+  signal(expected_signal, ut__signal_handler);
+}
 
-// --- exit status handling
+/* check received signal */
+void
+ut__check_signal(const char * restrict file, int line, const char * restrict func, int expected_signal, const char * restrict stmt)
+{
+  if (ut__signal_received != expected_signal) {
+    if (ut__signal_received == -1) {
+      fprintf(stderr, "UT: %s:%d:%s: expected signal %d, but no signal was raised: %s\n", file, line, func, expected_signal, stmt);
+    } else {
+      fprintf(stderr, "UT: %s:%d:%s: expected signal %d, got signal %d instead: %s\n", file, line, func, expected_signal, ut__signal_received, stmt);
+    }
+    ut__tests_failed++;
+  }
+  signal(expected_signal, SIG_DFL);
+}
 
-// exit and _Exit now jump back to a location recorded by UT_ASSERT_EXIT
+
+
+
+/* --- exit status handling */
+
+/* exit and _Exit now jump back to a location recorded by UT_ASSERT_EXIT */
 jmp_buf ut__jmp_buf_env;
+int ut__longjmp_from_exit;
 int ut__exit_status;
 
-// note that only lowest 8 bit will be preserved
 void
 exit(int status)
 {
@@ -71,19 +96,27 @@ _Exit(int status)
   longjmp(ut__jmp_buf_env, 1);
 }
 
+/* check exit status afterwards */
+void
+ut__check_status(const char * restrict file, int line, const char * restrict func, int expected_status, const char * restrict stmt)
+{
+  if (0 == ut__longjmp_from_exit) {
+    fprintf(stderr, "UT: %s:%d:%s: expected exit status %d, but exit or _Exit was not called: %s\n", file, line, func, expected_status, stmt);
+    ut__tests_failed++;
+  } else {
+    if (ut__exit_status != expected_status) {
+      fprintf(stderr, "UT: %s:%d:%s: expected exit status %d, got exit status %d instead: %s\n", file, line, func, expected_status, ut__exit_status, stmt); \
+      ut__tests_failed++;
+    }
+  }
+}
 
 
-
-
-// --- entry point
-
-// we provide our own "main" entry point to properly report test failures:
-// the unit test is also unsuccessful if no tests where run
-// we do call test() from within main. test() must be provided by the unit test.
+/* --- entry point */
 int
 main(int argc, char **argv)
 {
-  fprintf(stderr, "UT: ut, version 1.0.1\n");
+  fprintf(stderr, "UT: ut, version 1.1.0\n");
 
   test();
 

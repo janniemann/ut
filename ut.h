@@ -17,51 +17,38 @@
 #ifndef UT__H
 #define UT__H
 
-extern int ut__tests_run;
-extern int ut__tests_failed;
-extern volatile sig_atomic_t ut__signal_received;
-extern jmp_buf ut__jmp_buf_env;
-extern int ut__exit_status;
-
+/* simple assert-like macro */
 #define UT_ASSERT(expression) ut__tests_run++; ((expression) ? (void)0 : ut__assert(__FILE__, __LINE__, __func__, #expression))
 
+/* assert exit status, note: due to stack protection a call to setjmp can not be hidden */
 #define UT_ASSERT_EXIT(x, e) do {					\
-    if (!setjmp(ut__jmp_buf_env)) {					\
-      ut__tests_run++;							\
-      (e);								\
-      fprintf(stderr, "UT: %s:%d:%s: expected exit status %d, but exit or _Exit was not called\n", __FILE__, __LINE__, __func__, x); \
-      ut__tests_failed++;						\
-    } else {								\
-      if (ut__exit_status != x) {					\
-	fprintf(stderr, "UT: %s:%d:%s: expected exit status %d, got exit status %d instead\n", __FILE__, __LINE__, __func__, x, ut__exit_status); \
-	ut__tests_failed++;						\
-      }									\
-    }									\
-  } while (0)
-
-
-#define UT_ASSERT_SIGNAL(s, e) do {					\
     ut__tests_run++;							\
-    ut__signal_received = -1;						\
-    signal(s, ut__signal_handler);					\
-    (e);								\
-    if (ut__signal_received != s) {					\
-      if (ut__signal_received == -1) {					\
-	fprintf(stderr, "UT: %s:%d:%s: expected signal %d, but no signal was raised\n", __FILE__, __LINE__, __func__, s); \
-      } else {								\
-	fprintf(stderr, "UT: %s:%d:%s: expected signal %d, got signal %d instead\n", __FILE__, __LINE__, __func__, s, ut__signal_received); \
-      }									\
-      ut__tests_failed++;						\
+    ut__longjmp_from_exit = setjmp(ut__jmp_buf_env);			\
+    if (!ut__longjmp_from_exit) {					\
+      (e);								\
     }									\
-    signal(s, SIG_DFL);							\
+    ut__check_status(__FILE__, __LINE__, __func__, x, #e);		\
   } while (0)
 
+/* assert that a signal is raised */
+#define UT_ASSERT_SIGNAL(s, e) do {					\
+    ut__register_signal_test(s);					\
+    (e);								\
+    ut__check_signal(__FILE__, __LINE__, __func__, s, #e);		\
+  } while (0)
 
-// forward declaration: entry point for tests:
+/* prototype for test entry point */
 extern void test(void);
 
-// prototypes
-void ut__signal_handler(int signal);
+/* the following prototypes and extern declarations are used by macros above */
+extern int ut__tests_run;
+extern jmp_buf ut__jmp_buf_env;
+extern int ut__exit_status;
+extern int ut__longjmp_from_exit;
+
 void ut__assert(const char * restrict file, int line, const char * restrict func, const char * restrict failed_expression);
+void ut__check_signal(const char * restrict file, int line, const char * restrict func, int expected_signal, const char * restrict stmt);
+void ut__check_status(const char * restrict file, int line, const char * restrict func, int expected_status, const char * restrict stmt);
+void ut__register_signal_test(int signal);
 
 #endif
